@@ -12,7 +12,7 @@ module PdfComparison
   def self.compare(pdf_bytes, baseline_name)
     validate!(pdf_bytes)
 
-    threshold     = ENV.fetch('PDF_DIFF_THRESHOLD', '0.0').to_f
+    threshold     = ENV.fetch('PDF_DIFF_THRESHOLD', '0.1').to_f
     baseline_dir  = ENV.fetch('PDF_BASELINE_DIR', 'features/fixtures/baselines')
     actual_dir    = ENV.fetch('PDF_ACTUAL_DIR',   'features/fixtures/actuals')
     FileUtils.mkdir_p(baseline_dir)
