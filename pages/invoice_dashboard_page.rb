@@ -36,6 +36,9 @@ class InvoiceDashboardPage
 
   def click_generate
     @driver.find_element(css: '[data-testid="generate-btn"]').click
+    Selenium::WebDriver::Wait.new(timeout: 10).until do
+      @driver.execute_script("return document.readyState") == "complete"
+    end
   end
 
   def invoice_rows
@@ -43,7 +46,7 @@ class InvoiceDashboardPage
   end
 
   def client_names
-    @driver.find_elements(css: '[data-testid^="client-"]').map(&:text)
+    @driver.find_elements(css: 'td[data-testid^="client-"]').map(&:text)
   end
 
   def currency_for_client(client_name)
