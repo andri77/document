@@ -1,0 +1,6 @@
+*.sqlite3
+reports/
+.bundle/
+vendor/
+*.gem
+.DS_Store
