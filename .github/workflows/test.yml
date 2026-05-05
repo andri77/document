@@ -19,6 +19,9 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: true
 
+      - name: Install imagemagick and ghostscript
+        run: sudo apt-get install -y imagemagick ghostscript
+
       - name: Set up Chrome
         uses: browser-actions/setup-chrome@v1
 

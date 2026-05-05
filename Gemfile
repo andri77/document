@@ -19,4 +19,5 @@ group :test do
   gem 'selenium-webdriver', '~> 4.20'
   gem 'rspec-expectations', '~> 3.13'
   gem 'rack-test', '~> 2.1'
+  gem 'mini_magick', '~> 4.12'
 end

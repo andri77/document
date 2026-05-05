@@ -4,3 +4,4 @@ reports/
 vendor/
 *.gem
 .DS_Store
+features/fixtures/
