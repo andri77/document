@@ -20,6 +20,7 @@ end
 
 Given('an invoice exists with ID {string}') do |_id|
   Invoice.dataset.delete
+  Invoice.db.run("DELETE FROM sqlite_sequence WHERE name='invoices'") rescue nil
   data = VALID_INVOICE_DATA.dup
   uri = URI("#{BASE_URL}/api/invoices")
   http = Net::HTTP.new(uri.host, uri.port)
