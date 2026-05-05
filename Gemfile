@@ -11,6 +11,7 @@ gem 'nokogiri', '~> 1.16'
 gem 'prawn', '~> 2.5'
 gem 'puma', '~> 6.4'
 gem 'json', '~> 2.7'
+gem 'ostruct'  # required by rack 2.x on Ruby 4.0+
 
 # Test
 group :test do

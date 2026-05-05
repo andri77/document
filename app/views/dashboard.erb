@@ -1,0 +1,58 @@
+<h2>Create New Invoice</h2>
+<form id="invoice-form" action="/invoices" method="post">
+  <label>Client Name</label>
+  <input type="text" id="client_name" name="client_name" data-testid="client-name" required>
+
+  <label>Currency</label>
+  <select id="currency" name="currency" data-testid="currency">
+    <option value="AUD">AUD</option>
+    <option value="USD">USD</option>
+    <option value="EUR">EUR</option>
+  </select>
+
+  <label>Unit Price</label>
+  <input type="number" id="unit_price" name="unit_price" data-testid="unit-price" step="0.01" required>
+
+  <label>Number of Items</label>
+  <input type="number" id="item_count" name="item_count" data-testid="item-count" value="1" min="1" required>
+
+  <input type="hidden" name="amount" id="amount" value="0">
+
+  <button type="submit" id="generate-btn" data-testid="generate-btn">Generate Invoice</button>
+</form>
+
+<h2>Invoices</h2>
+<% if @invoices.empty? %>
+  <p class="empty" data-testid="empty-msg">No invoices yet</p>
+<% else %>
+  <table id="invoice-table" data-testid="invoice-table">
+    <thead>
+      <tr>
+        <th>ID</th><th>Client</th><th>Currency</th><th>Total</th><th>Status</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @invoices.each do |inv| %>
+        <tr data-testid="invoice-row-<%= inv.id %>">
+          <td><%= inv.id %></td>
+          <td data-testid="client-<%= inv.id %>"><%= inv.client_name %></td>
+          <td data-testid="currency-<%= inv.id %>"><%= inv.currency %></td>
+          <td><%= inv.currency %> <%= inv.total %></td>
+          <td data-testid="status-<%= inv.id %>"><%= inv.status %></td>
+          <td>
+            <a href="/api/invoices/<%= inv.id %>/xml" data-testid="xml-link-<%= inv.id %>">XML</a> |
+            <a href="/api/invoices/<%= inv.id %>/pdf" data-testid="pdf-link-<%= inv.id %>">PDF</a>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+
+<script>
+  document.getElementById('invoice-form').addEventListener('submit', function() {
+    var price = parseFloat(document.getElementById('unit_price').value) || 0;
+    var count = parseInt(document.getElementById('item_count').value) || 1;
+    document.getElementById('amount').value = (price * count).toFixed(2);
+  });
+</script>
