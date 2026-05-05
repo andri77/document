@@ -35,3 +35,9 @@ Feature: Invoice API - XML and PDF Generation
       | 1     | 100.0  | 100.0          |
       | 3     | 250.0  | 750.0          |
       | 5     | 99.99  | 499.95         |
+
+  @api @pdf_visual
+  Scenario: PDF invoice matches visual baseline
+    Given an invoice exists with ID "1"
+    When I GET "/api/invoices/1/pdf"
+    Then the PDF should match the visual baseline "invoice_standard"
