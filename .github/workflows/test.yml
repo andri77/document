@@ -1,0 +1,55 @@
+name: Cucumber Test Suite
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Start Sinatra app in background
+        run: bundle exec ruby app/app.rb &
+        env:
+          APP_ENV: production
+          CI: true
+
+      - name: Wait for app to be ready
+        run: sleep 3
+
+      - name: Run API Cucumber tests
+        run: |
+          mkdir -p reports
+          CUCUMBER_PUBLISH_QUIET=true bundle exec cucumber features/invoice_api.feature \
+            --format html --out reports/cucumber_report.html --format pretty
+        env:
+          CI: true
+
+      - name: Run UI Cucumber tests
+        run: |
+          CUCUMBER_PUBLISH_QUIET=true bundle exec cucumber features/invoice_ui.feature \
+            --format html --out reports/cucumber_ui_report.html --format pretty
+        env:
+          CI: true
+          HEADLESS: true
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cucumber-reports
+          path: reports/
