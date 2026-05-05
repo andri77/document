@@ -14,6 +14,10 @@ After('not @ui') do
   Invoice.dataset.delete
 end
 
+After do
+  sleep(rand(2..5)) unless ENV['CI']
+end
+
 def chrome_options
   options = Selenium::WebDriver::Chrome::Options.new
   options.add_argument('--headless') if ENV['CI'] || ENV['HEADLESS']

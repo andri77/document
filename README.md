@@ -67,8 +67,9 @@ A Ruby/Sinatra invoice system demonstrating BDD automation with Cucumber — UI 
 │                          Net::HTTP ──► Sinatra API                │
 │                          Nokogiri (XML assertions)                │
 │                                                                   │
-│  support/env.rb   — bootstrap: BASE_URL, RSpec matchers           │
-│  support/hooks.rb — Before: start app │ After: reset DB           │
+│  support/env.rb            — bootstrap: BASE_URL, RSpec matchers  │
+│  support/hooks.rb          — Before/After hooks, demo sleep        │
+│  support/pdf_comparison.rb — PDF→PNG conversion, mask, diff        │
 └─────────────────────────────────────────────────────────────────┘
 
 
@@ -126,7 +127,8 @@ document/
 │   │   └── api_steps.rb              # Net::HTTP + Nokogiri assertion steps
 │   └── support/
 │       ├── env.rb                    # Cucumber world setup (BASE_URL, RSpec matchers)
-│       └── hooks.rb                  # Before/After hooks (launch app, wipe DB)
+│       ├── hooks.rb                  # Before/After hooks (launch app, wipe DB, demo sleep)
+│       └── pdf_comparison.rb         # PDF→PNG conversion, timestamp masking, pixel diff
 ├── pages/
 │   └── invoice_dashboard_page.rb     # Page Object Model for the dashboard
 ├── db/
@@ -299,6 +301,94 @@ HEADLESS=true bundle exec cucumber features/invoice_ui.feature
 
 ```bash
 BASE_URL=https://staging.example.com bundle exec cucumber
+```
+
+---
+
+## Command Line Options
+
+### Filtering by tag
+
+Every scenario is tagged — pass `--tags` to run a subset.
+
+```bash
+# API tests only
+bundle exec cucumber --tags @api
+
+# UI tests only
+bundle exec cucumber --tags @ui
+
+# Visual PDF comparison only
+bundle exec cucumber --tags @pdf_visual
+
+# Combine tags: API AND pdf_visual (both tags must be present)
+bundle exec cucumber --tags "@api and @pdf_visual"
+
+# Exclude a tag: everything except UI
+bundle exec cucumber --tags "not @ui"
+```
+
+Available tags in this project:
+
+| Tag | Scenarios covered |
+|-----|-------------------|
+| `@api` | All API scenarios (XML, PDF download, visual baseline) |
+| `@ui` | All Selenium browser scenarios |
+| `@pdf_visual` | Visual PDF baseline comparison only |
+
+### Browser options
+
+```bash
+# Run Chrome headless (no visible window)
+HEADLESS=true bundle exec cucumber features/invoice_ui.feature
+
+# Run with a visible Chrome window (default locally)
+bundle exec cucumber features/invoice_ui.feature
+
+# CI mode — forces headless, skips demo sleep between scenarios
+CI=true bundle exec cucumber
+```
+
+### Environment variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `BASE_URL` | `http://localhost:4567` | App URL for both UI and API tests |
+| `HEADLESS` | *(unset)* | Set to `true` to run Chrome headless |
+| `CI` | *(unset)* | Set to `true` in CI — enables headless and skips demo sleep |
+| `PDF_DIFF_THRESHOLD` | `0.0` | Max allowed pixel difference % for visual PDF comparison |
+| `PDF_BASELINE_DIR` | `features/fixtures/baselines` | Where baseline PNGs are stored |
+| `PDF_ACTUAL_DIR` | `features/fixtures/actuals` | Where per-run actual + diff PNGs are written |
+
+**Examples:**
+
+```bash
+# Run API tests against a staging server
+BASE_URL=https://staging.example.com bundle exec cucumber --tags @api
+
+# Run visual PDF test with a 0.5% pixel tolerance
+PDF_DIFF_THRESHOLD=0.5 bundle exec cucumber --tags @pdf_visual
+
+# Full suite, headless, against a custom URL
+HEADLESS=true BASE_URL=http://localhost:8080 bundle exec cucumber
+
+# Regenerate the PDF visual baseline (delete it first, then run)
+rm features/fixtures/baselines/invoice_standard.png
+bundle exec cucumber --tags @pdf_visual
+```
+
+### Output formats
+
+```bash
+# Pretty console output (default)
+bundle exec cucumber --format pretty
+
+# HTML report
+mkdir -p reports
+bundle exec cucumber --format html --out reports/cucumber_report.html --format pretty
+
+# JSON output (for integration with other tools)
+bundle exec cucumber --format json --out reports/cucumber_report.json
 ```
 
 ---
