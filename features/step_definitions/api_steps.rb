@@ -106,3 +106,10 @@ Then('the XML total should equal {string}') do |expected_total|
   total = doc.at_xpath('//Total').text
   expect(total).to eq(expected_total)
 end
+
+Then('the PDF should match the visual baseline {string}') do |name|
+  result = PdfComparison.compare(@last_response.body, name)
+  expect(result[:diff_percent]).to be <= result[:threshold],
+    "PDF diff #{result[:diff_percent].round(4)}% exceeds threshold #{result[:threshold]}%.\n" \
+    "Actual: #{result[:actual_path]}\nDiff:   #{result[:diff_path]}"
+end
