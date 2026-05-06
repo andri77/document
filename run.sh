@@ -5,11 +5,16 @@ PORT=${PORT:-4567}
 BASE_URL="http://localhost:$PORT"
 APP_PID=""
 
-# Prefer Homebrew Ruby over the macOS system Ruby 2.6
-HOMEBREW_RUBY="/opt/homebrew/opt/ruby/bin"
-if [[ -x "$HOMEBREW_RUBY/ruby" && "$PATH" != *"$HOMEBREW_RUBY"* ]]; then
-  export PATH="$HOMEBREW_RUBY:$PATH"
-fi
+# Prefer Homebrew Ruby 3.3 over the macOS system Ruby 2.6
+for HOMEBREW_RUBY in \
+    "/opt/homebrew/opt/ruby@3.3/bin" \
+    "/opt/homebrew/Cellar/ruby@3.3/3.3.11/bin" \
+    "/opt/homebrew/opt/ruby/bin"; do
+  if [[ -x "$HOMEBREW_RUBY/ruby" && "$PATH" != *"$HOMEBREW_RUBY"* ]]; then
+    export PATH="$HOMEBREW_RUBY:$PATH"
+    break
+  fi
+done
 
 # Point Selenium Manager to a user-writable cache (~/.cache is root-owned on macOS)
 SE_CACHE="$HOME/Library/Caches/selenium"

@@ -151,32 +151,49 @@ document/
 
 | Requirement | Version | Check |
 |-------------|---------|-------|
-| Ruby | >= 3.2.0 | `ruby -v` |
-| Bundler | >= 2.x | `bundler -v` |
+| Ruby | 3.3.x | `ruby -v` |
+| Bundler | 4.x | `bundler -v` |
 | Google Chrome | Latest stable | `google-chrome --version` or `open -a "Google Chrome"` |
 | ChromeDriver | Matches Chrome | Managed automatically by selenium-webdriver 4.x |
 | SQLite | 3.x | `sqlite3 --version` |
+| ImageMagick | 6 or 7 | `magick --version` |
+| Ghostscript | Any recent | `gs --version` |
 
 > **ChromeDriver note:** selenium-webdriver 4.6+ manages ChromeDriver automatically via the Chrome for Testing service. No manual ChromeDriver install is needed.
 
-### Install Ruby (macOS)
+> **macOS system Ruby warning:** macOS ships with Ruby 2.6 at `/usr/bin/ruby`. This project requires Ruby 3.3. If you see a `Could not find 'bundler'` error, your terminal is using the wrong Ruby — see the fix below.
+
+### Install Ruby 3.3 (macOS)
 
 ```bash
-# Using rbenv (recommended)
-brew install rbenv ruby-build
-rbenv install 3.3.0
-rbenv global 3.3.0
-
-# Or using RVM
-\curl -sSL https://get.rvm.io | bash -s stable
-rvm install 3.3.0
-rvm use 3.3.0
+brew install ruby@3.3
 ```
 
-### Install SQLite (macOS)
+Then add it to your shell PATH **permanently** (do this once):
 
 ```bash
-brew install sqlite3
+echo 'export PATH="/opt/homebrew/opt/ruby@3.3/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Verify the right Ruby is active:
+
+```bash
+ruby -v        # should show ruby 3.3.x
+bundler -v     # should show Bundler 4.x
+```
+
+> **Alternative:** Use rbenv or RVM to manage multiple Ruby versions:
+> ```bash
+> brew install rbenv ruby-build
+> rbenv install 3.3.11
+> rbenv local 3.3.11   # sets version for this project directory only
+> ```
+
+### Install system dependencies (macOS)
+
+```bash
+brew install imagemagick ghostscript sqlite3
 ```
 
 ---
@@ -306,6 +323,8 @@ BASE_URL=https://staging.example.com bundle exec cucumber
 ---
 
 ## Command Line Options
+
+> **Tip:** `./run.sh` handles the Ruby PATH automatically. If you're running `bundle exec` directly in your terminal and see a bundler version error, either add Homebrew Ruby to your PATH (see [Prerequisites](#prerequisites)) or prefix commands with `PATH="/opt/homebrew/opt/ruby@3.3/bin:$PATH"`.
 
 ### Filtering by tag
 
