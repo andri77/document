@@ -42,15 +42,15 @@ trap cleanup EXIT INT TERM
 
 # ── Usage ──────────────────────────────────────────────────────────────────────
 usage() {
-  echo -e "${BOLD}Usage:${RESET} $0 [command]"
+  echo "Usage: $0 [command]"
   echo ""
-  echo "  ${BOLD}app${RESET}      Start the Sinatra server (foreground)"
-  echo "  ${BOLD}test${RESET}     Start app + run full Cucumber suite, then stop app"
-  echo "  ${BOLD}api${RESET}      Start app + run API tests only, then stop app"
-  echo "  ${BOLD}ui${RESET}       Start app + run UI tests only, then stop app"
-  echo "  ${BOLD}report${RESET}   Same as 'test' but opens HTML report when done"
+  echo "  app      Start the Sinatra server (foreground)"
+  echo "  test     Start app + run full Cucumber suite, then stop app"
+  echo "  api      Start app + run API tests only, then stop app"
+  echo "  ui       Start app + run UI tests only, then stop app"
+  echo "  report   Same as 'test' but opens HTML report when done"
   echo ""
-  echo "  ${BOLD}ENV vars:${RESET}"
+  echo "  ENV vars:"
   echo "    PORT=4567      App port (default: 4567)"
   echo "    HEADLESS=true  Run Chrome headless (default: false)"
   echo "    CI=true        Headless + no colour (set automatically in CI)"
