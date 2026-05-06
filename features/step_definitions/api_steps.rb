@@ -1,7 +1,7 @@
-require 'net/http'
 require 'json'
 require 'nokogiri'
 require_relative '../../app/models/invoice'
+require_relative '../../pages/invoice_api_client'
 
 VALID_INVOICE_DATA = {
   client_name: 'Acme Corp',
@@ -11,37 +11,41 @@ VALID_INVOICE_DATA = {
   unit_price: 1500.0
 }.freeze
 
+def api
+  @api ||= InvoiceApiClient.new(BASE_URL)
+end
+
+def reset_invoices
+  Invoice.dataset.delete
+  Invoice.db.run("DELETE FROM sqlite_sequence WHERE name='invoices'") rescue nil
+end
+
 Given('the invoice API is running') do
-  uri = URI("#{BASE_URL}/api/invoices")
-  Net::HTTP.get_response(uri)
+  api.health_check
 rescue StandardError
   raise 'Sinatra app is not running. Start it with: bundle exec ruby app/app.rb'
 end
 
 Given('an invoice exists with ID {string}') do |_id|
-  Invoice.dataset.delete
-  Invoice.db.run("DELETE FROM sqlite_sequence WHERE name='invoices'") rescue nil
-  data = VALID_INVOICE_DATA.dup
-  uri = URI("#{BASE_URL}/api/invoices")
-  http = Net::HTTP.new(uri.host, uri.port)
-  request = Net::HTTP::Post.new(uri.path, 'Content-Type' => 'application/json')
-  request.body = data.to_json
-  @last_response = http.request(request)
-  @invoice_id = JSON.parse(@last_response.body)['id']
+  reset_invoices
+  response = api.create(VALID_INVOICE_DATA)
+  @invoice_id = JSON.parse(response.body)['id']
 end
 
-When('I POST to {string} with valid invoice data') do |path|
-  uri = URI("#{BASE_URL}#{path}")
-  http = Net::HTTP.new(uri.host, uri.port)
-  request = Net::HTTP::Post.new(uri.path, 'Content-Type' => 'application/json')
-  request.body = VALID_INVOICE_DATA.to_json
-  @last_response = http.request(request)
+When('I POST to {string} with valid invoice data') do |_path|
+  @last_response = api.create(VALID_INVOICE_DATA)
 end
 
 When('I GET {string}') do |path|
   actual_path = path.gsub('/1/', "/#{@invoice_id}/")
-  uri = URI("#{BASE_URL}#{actual_path}")
-  @last_response = Net::HTTP.get_response(uri)
+  case actual_path
+  when %r{/api/invoices/(\d+)/xml$}
+    @last_response = api.get_xml(Regexp.last_match(1).to_i)
+  when %r{/api/invoices/(\d+)/pdf$}
+    @last_response = api.get_pdf(Regexp.last_match(1).to_i)
+  else
+    @last_response = Net::HTTP.get_response(URI("#{BASE_URL}#{actual_path}"))
+  end
 end
 
 Then('the response status should be {int}') do |expected_status|
@@ -91,15 +95,9 @@ When('I create an invoice with {string} line items at {string} each') do |items,
     item_count: @expected_items,
     unit_price: @expected_price
   }
-  uri = URI("#{BASE_URL}/api/invoices")
-  http = Net::HTTP.new(uri.host, uri.port)
-  request = Net::HTTP::Post.new(uri.path, 'Content-Type' => 'application/json')
-  request.body = data.to_json
-  response = http.request(request)
+  response = api.create(data)
   @invoice_id = JSON.parse(response.body)['id']
-
-  xml_uri = URI("#{BASE_URL}/api/invoices/#{@invoice_id}/xml")
-  @last_response = Net::HTTP.get_response(xml_uri)
+  @last_response = api.get_xml(@invoice_id)
 end
 
 Then('the XML total should equal {string}') do |expected_total|
@@ -116,31 +114,21 @@ Then('the PDF should match the visual baseline {string}') do |name|
 end
 
 Given('the {string} visual baseline is established') do |baseline_name|
-  Invoice.dataset.delete
-  Invoice.db.run("DELETE FROM sqlite_sequence WHERE name='invoices'") rescue nil
-  uri = URI("#{BASE_URL}/api/invoices")
-  http = Net::HTTP.new(uri.host, uri.port)
-  request = Net::HTTP::Post.new(uri.path, 'Content-Type' => 'application/json')
-  request.body = VALID_INVOICE_DATA.to_json
-  response = http.request(request)
+  reset_invoices
+  response = api.create(VALID_INVOICE_DATA)
   invoice_id = JSON.parse(response.body)['id']
-  pdf_response = Net::HTTP.get_response(URI("#{BASE_URL}/api/invoices/#{invoice_id}/pdf"))
+  pdf_response = api.get_pdf(invoice_id)
   baseline_path = File.join(ENV.fetch('PDF_BASELINE_DIR', 'features/fixtures/baselines'), "#{baseline_name}.png")
   FileUtils.rm_f(baseline_path)
   PdfComparison.compare(pdf_response.body, baseline_name)
 end
 
 When('I create a different invoice and download its PDF') do
-  Invoice.dataset.delete
-  Invoice.db.run("DELETE FROM sqlite_sequence WHERE name='invoices'") rescue nil
+  reset_invoices
   different_data = { client_name: 'Acme Corp', currency: 'AUD', amount: 1550.0, item_count: 1, unit_price: 1550.0 }
-  uri = URI("#{BASE_URL}/api/invoices")
-  http = Net::HTTP.new(uri.host, uri.port)
-  request = Net::HTTP::Post.new(uri.path, 'Content-Type' => 'application/json')
-  request.body = different_data.to_json
-  response = http.request(request)
+  response = api.create(different_data)
   invoice_id = JSON.parse(response.body)['id']
-  @last_response = Net::HTTP.get_response(URI("#{BASE_URL}/api/invoices/#{invoice_id}/pdf"))
+  @last_response = api.get_pdf(invoice_id)
 end
 
 Then('the PDF should visually differ from baseline {string}') do |baseline_name|
