@@ -23,7 +23,6 @@ module PdfComparison
     diff_path     = File.join(actual_dir,   "#{baseline_name}_diff.png")
 
     pdf_to_png(pdf_bytes, actual_path)
-    apply_mask(actual_path)
 
     unless File.exist?(baseline_path)
       FileUtils.cp(actual_path, baseline_path)
@@ -31,7 +30,17 @@ module PdfComparison
       return { diff_percent: 0.0, threshold: threshold, actual_path: actual_path, diff_path: diff_path }
     end
 
-    diff_percent = pixel_diff_percent(baseline_path, actual_path, diff_path)
+    # Mask applied to temp copies only — saved PNGs remain clean for inspection
+    diff_percent = Dir.mktmpdir do |dir|
+      masked_actual    = File.join(dir, 'actual_masked.png')
+      masked_baseline  = File.join(dir, 'baseline_masked.png')
+      FileUtils.cp(actual_path,   masked_actual)
+      FileUtils.cp(baseline_path, masked_baseline)
+      apply_mask(masked_actual)
+      apply_mask(masked_baseline)
+      pixel_diff_percent(masked_baseline, masked_actual, diff_path)
+    end
+
     { diff_percent: diff_percent, threshold: threshold, actual_path: actual_path, diff_path: diff_path }
   end
 
