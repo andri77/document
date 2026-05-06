@@ -57,6 +57,7 @@ A Ruby/Sinatra invoice system demonstrating BDD automation with Cucumber — UI 
 │  │                                   │                            │
 │  │                                   ▼                            │
 │  │                        InvoiceDashboardPage (POM)              │
+│  │                         pages/invoice_dashboard_page.rb        │
 │  │                                   │                            │
 │  │                                   ▼                            │
 │  │                        Selenium WebDriver ──► Chrome           │
@@ -64,11 +65,15 @@ A Ruby/Sinatra invoice system demonstrating BDD automation with Cucumber — UI 
 │  └── invoice_api.feature ────► api_steps.rb                      │
 │                                    │                              │
 │                                    ▼                              │
+│                          InvoiceApiClient (POM)                   │
+│                          pages/invoice_api_client.rb              │
+│                                    │                              │
+│                                    ▼                              │
 │                          Net::HTTP ──► Sinatra API                │
 │                          Nokogiri (XML assertions)                │
 │                                                                   │
 │  support/env.rb            — bootstrap: BASE_URL, RSpec matchers  │
-│  support/hooks.rb          — Before/After hooks, demo sleep        │
+│  support/hooks.rb          — BeforeAll auto-start, DB wipe, sleep │
 │  support/pdf_comparison.rb — PDF→PNG conversion, mask, diff        │
 └─────────────────────────────────────────────────────────────────┘
 
@@ -100,7 +105,8 @@ A Ruby/Sinatra invoice system demonstrating BDD automation with Cucumber — UI 
 | UI templates | ERB | Server-side rendered dashboard |
 | UI tests | Cucumber 9 + Selenium WebDriver 4 | BDD-driven browser automation |
 | API tests | Cucumber 9 + Net::HTTP | HTTP-level API and XML validation |
-| POM | `pages/invoice_dashboard_page.rb` | Encapsulates all dashboard selectors |
+| UI POM | `pages/invoice_dashboard_page.rb` | Encapsulates all dashboard selectors and Selenium interactions |
+| API POM | `pages/invoice_api_client.rb` | Encapsulates all HTTP calls (`create`, `get_xml`, `get_pdf`) |
 | CI/CD | GitHub Actions | Automated test run on every push/PR |
 
 ---
@@ -123,14 +129,15 @@ document/
 │   ├── invoice_ui.feature            # Selenium UI scenarios (dashboard, form, currencies)
 │   ├── invoice_api.feature           # API scenarios (POST, XML structure, PDF download)
 │   ├── step_definitions/
-│   │   ├── ui_steps.rb               # Selenium step implementations
-│   │   └── api_steps.rb              # Net::HTTP + Nokogiri assertion steps
+│   │   ├── ui_steps.rb               # UI step implementations — delegates to InvoiceDashboardPage
+│   │   └── api_steps.rb              # API step implementations — delegates to InvoiceApiClient
 │   └── support/
 │       ├── env.rb                    # Cucumber world setup (BASE_URL, RSpec matchers)
-│       ├── hooks.rb                  # Before/After hooks (launch app, wipe DB, demo sleep)
+│       ├── hooks.rb                  # BeforeAll auto-start, Before/After DB wipe, demo sleep
 │       └── pdf_comparison.rb         # PDF→PNG conversion, timestamp masking, pixel diff
 ├── pages/
-│   └── invoice_dashboard_page.rb     # Page Object Model for the dashboard
+│   ├── invoice_dashboard_page.rb     # UI Page Object — dashboard selectors and Selenium actions
+│   └── invoice_api_client.rb         # API Page Object — HTTP client (create, get_xml, get_pdf)
 ├── db/
 │   └── migrations/
 │       └── 001_create_invoices.rb    # Sequel migration for the invoices table
@@ -138,8 +145,11 @@ document/
 │   └── workflows/
 │       └── test.yml                  # GitHub Actions CI pipeline
 ├── docs/
-│   └── plans/                        # Design documents
+│   ├── postman/
+│   │   └── invoice-api-collection.json  # Postman collection for XML API testing
+│   └── superpowers/                  # Design specs and implementation plans
 ├── reports/                          # Generated HTML test reports (gitignored)
+├── cucumber.yml                      # Default Cucumber options (--publish-quiet)
 ├── Gemfile
 ├── Gemfile.lock
 └── README.md
@@ -270,7 +280,7 @@ PORT=8080 bundle exec ruby app/app.rb
 
 ### Prerequisites for tests
 
-The app must be running before executing the UI or API test suite (or configured to auto-start via hooks — see `features/support/hooks.rb`).
+The test suite auto-starts the Sinatra app if it is not already running (`BeforeAll` in `features/support/hooks.rb` spawns the server and waits up to 15 s for it to respond). You can also start it manually beforehand — the hook detects a running server and skips the spawn.
 
 ### Run the full suite
 
@@ -489,8 +499,12 @@ The GitHub Actions pipeline runs automatically on every push and pull request to
 
 ## Key Design Decisions
 
-- **Page Object Model** — `pages/` lives at the project root, separate from `features/`, so page classes can be shared across multiple feature files without circular requires.
+- **Symmetric Page Object Model** — both layers have a dedicated page object in `pages/`:
+  - `InvoiceDashboardPage` — wraps every Selenium interaction (locators, waits, form helpers)
+  - `InvoiceApiClient` — wraps every HTTP call (`create`, `get_xml`, `get_pdf`); step definitions contain only orchestration and assertions, no transport code
+  - `pages/` lives at the project root so objects can be shared across feature files without circular requires
+- **Auto-starting server** — `BeforeAll` in `hooks.rb` checks whether the app is already up and spawns it if not, so `bundle exec cucumber` works without a separate server terminal. `AfterAll` only terminates the process when Cucumber started it — if `run.sh` manages the server, Cucumber leaves it alone.
 - **Test isolation** — `hooks.rb` wipes the database after each scenario, so every scenario starts with a clean slate and order-independence is guaranteed.
-- **No external test tool dependency** — API tests use Ruby's built-in `Net::HTTP` rather than requiring Postman/SoapUI locally. The same assertions can be replicated in Postman by importing the endpoint URLs.
+- **No external test tool dependency** — API tests use Ruby's built-in `Net::HTTP` rather than requiring Postman/SoapUI locally. A Postman collection (`docs/postman/invoice-api-collection.json`) is provided for exploratory and manual testing.
 - **SQLite** — chosen for zero-config setup in both local development and GitHub Actions, with no database server required.
 - **ChromeDriver auto-management** — selenium-webdriver 4.6+ downloads the correct ChromeDriver version automatically, eliminating version mismatch issues in CI.
