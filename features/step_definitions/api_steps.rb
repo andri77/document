@@ -133,7 +133,7 @@ end
 When('I create a different invoice and download its PDF') do
   Invoice.dataset.delete
   Invoice.db.run("DELETE FROM sqlite_sequence WHERE name='invoices'") rescue nil
-  different_data = { client_name: 'Rival Corp', currency: 'USD', amount: 9999.0, item_count: 5, unit_price: 1999.8 }
+  different_data = { client_name: 'Acme Corp', currency: 'AUD', amount: 1550.0, item_count: 1, unit_price: 1550.0 }
   uri = URI("#{BASE_URL}/api/invoices")
   http = Net::HTTP.new(uri.host, uri.port)
   request = Net::HTTP::Post.new(uri.path, 'Content-Type' => 'application/json')
