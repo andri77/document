@@ -6,7 +6,7 @@ Feature: Invoice Dashboard UI
     Given I am on the invoice dashboard
     Then I should see "No invoices yet"
 
-  @ui
+  @ui1 @pdf_visual
   Scenario: Create a new invoice
     Given I am on the invoice dashboard
     When I fill in the invoice form with:
@@ -16,6 +16,7 @@ Feature: Invoice Dashboard UI
     And I click "Generate Invoice"
     Then I should see "Acme Corp" in the invoice list
     And the invoice status should be "Generated"
+    And the generated invoice PDF should match the visual baseline "invoice_ui_standard"
 
   @ui
   Scenario Outline: Create invoices in multiple currencies

@@ -1,4 +1,5 @@
 require_relative '../../pages/invoice_dashboard_page'
+require_relative '../../pages/invoice_api_client'
 
 Given('I am on the invoice dashboard') do
   @page = InvoiceDashboardPage.new(@driver)
@@ -43,4 +44,13 @@ end
 
 Then('the invoice list should show {string} for {string}') do |currency, client|
   expect(@page.currency_for_client(client)).to eq(currency)
+end
+
+Then('the generated invoice PDF should match the visual baseline {string}') do |name|
+  invoice_id = @page.last_invoice_id
+  response = InvoiceApiClient.new(BASE_URL).get_pdf(invoice_id)
+  result = PdfComparison.compare(response.body, name)
+  expect(result[:diff_percent]).to be <= result[:threshold],
+    "PDF diff #{result[:diff_percent].round(4)}% exceeds threshold #{result[:threshold]}%.\n" \
+    "Actual: #{result[:actual_path]}\nDiff:   #{result[:diff_path]}"
 end

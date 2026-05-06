@@ -62,4 +62,10 @@ class InvoiceDashboardPage
   rescue Selenium::WebDriver::Error::NoSuchElementError
     nil
   end
+
+  def last_invoice_id
+    rows = invoice_rows
+    return nil if rows.empty?
+    rows.last.attribute('data-testid').split('-').last.to_i
+  end
 end
