@@ -114,3 +114,38 @@ Then('the PDF should match the visual baseline {string}') do |name|
     "PDF diff #{result[:diff_percent].round(4)}% exceeds threshold #{result[:threshold]}%.\n" \
     "Actual: #{result[:actual_path]}\nDiff:   #{result[:diff_path]}"
 end
+
+Given('the {string} visual baseline is established') do |baseline_name|
+  Invoice.dataset.delete
+  Invoice.db.run("DELETE FROM sqlite_sequence WHERE name='invoices'") rescue nil
+  uri = URI("#{BASE_URL}/api/invoices")
+  http = Net::HTTP.new(uri.host, uri.port)
+  request = Net::HTTP::Post.new(uri.path, 'Content-Type' => 'application/json')
+  request.body = VALID_INVOICE_DATA.to_json
+  response = http.request(request)
+  invoice_id = JSON.parse(response.body)['id']
+  pdf_response = Net::HTTP.get_response(URI("#{BASE_URL}/api/invoices/#{invoice_id}/pdf"))
+  baseline_path = File.join(ENV.fetch('PDF_BASELINE_DIR', 'features/fixtures/baselines'), "#{baseline_name}.png")
+  FileUtils.rm_f(baseline_path)
+  PdfComparison.compare(pdf_response.body, baseline_name)
+end
+
+When('I create a different invoice and download its PDF') do
+  Invoice.dataset.delete
+  Invoice.db.run("DELETE FROM sqlite_sequence WHERE name='invoices'") rescue nil
+  different_data = { client_name: 'Rival Corp', currency: 'USD', amount: 9999.0, item_count: 5, unit_price: 1999.8 }
+  uri = URI("#{BASE_URL}/api/invoices")
+  http = Net::HTTP.new(uri.host, uri.port)
+  request = Net::HTTP::Post.new(uri.path, 'Content-Type' => 'application/json')
+  request.body = different_data.to_json
+  response = http.request(request)
+  invoice_id = JSON.parse(response.body)['id']
+  @last_response = Net::HTTP.get_response(URI("#{BASE_URL}/api/invoices/#{invoice_id}/pdf"))
+end
+
+Then('the PDF should visually differ from baseline {string}') do |baseline_name|
+  result = PdfComparison.compare(@last_response.body, baseline_name)
+  expect(result[:diff_percent]).to be > 0,
+    "Expected PDF to differ from '#{baseline_name}' baseline but diff was 0%.\n" \
+    "Actual: #{result[:actual_path]}\nDiff:   #{result[:diff_path]}"
+end

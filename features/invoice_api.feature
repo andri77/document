@@ -41,3 +41,9 @@ Feature: Invoice API - XML and PDF Generation
     Given an invoice exists with ID "1"
     When I GET "/api/invoices/1/pdf"
     Then the PDF should match the visual baseline "invoice_standard"
+
+  @api @pdf_visual
+  Scenario: PDF comparison detects a visually different invoice
+    Given the "invoice_standard" visual baseline is established
+    When I create a different invoice and download its PDF
+    Then the PDF should visually differ from baseline "invoice_standard"
