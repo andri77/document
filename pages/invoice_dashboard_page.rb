@@ -68,4 +68,14 @@ class InvoiceDashboardPage
     return nil if rows.empty?
     rows.last.attribute('data-testid').split('-').last.to_i
   end
+
+  def click_pdf_link(invoice_id)
+    origin = @driver.window_handle
+    @driver.find_element(css: "[data-testid=\"pdf-link-#{invoice_id}\"]").click
+    wait = Selenium::WebDriver::Wait.new(timeout: 10)
+    wait.until { @driver.window_handles.length > 1 }
+    @driver.switch_to.window(@driver.window_handles.last)
+    wait.until { @driver.current_url.include?('/pdf') }
+    @driver.switch_to.window(origin)
+  end
 end

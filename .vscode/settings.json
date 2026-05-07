@@ -1,0 +1,14 @@
+{
+  "cucumber.glue": [
+    "features/step_definitions/**/*.rb"
+  ],
+  "cucumber.features": [
+    "features/**/*.feature"
+  ],
+  "cucumberautocomplete.steps": [
+    "features/step_definitions/*.rb"
+  ],
+  "cucumberautocomplete.syncfeatures": "features/*.feature",
+  "cucumberautocomplete.strictGherkinCompletion": false,
+  "cucumberautocomplete.onTypeFormat": true
+}

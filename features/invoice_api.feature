@@ -29,6 +29,13 @@ Feature: Invoice API - XML and PDF Generation
     Given the invoice API is running
     When I create an invoice with "<items>" line items at "<price>" each
     Then the XML total should equal "<expected_total>"
+    And the XML root element "Invoice" should have attribute "version" equal to "1.0"
+    And the XML should have "<items>" line items
+    And the XML element "Invoice/Currency" should equal "AUD"
+    And the XML element "Invoice/Status" should equal "Generated"
+    And the XML line items should each have unit price "<price>"
+    And each XML line item should have a sequential "number" attribute
+    And the XML "GeneratedAt" element should not be empty
 
     Examples:
       | items | price  | expected_total |

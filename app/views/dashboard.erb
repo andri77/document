@@ -41,7 +41,7 @@
           <td data-testid="status-<%= inv.id %>"><%= inv.status %></td>
           <td>
             <a href="/api/invoices/<%= inv.id %>/xml" data-testid="xml-link-<%= inv.id %>">XML</a> |
-            <a href="/api/invoices/<%= inv.id %>/pdf" data-testid="pdf-link-<%= inv.id %>">PDF</a>
+            <a href="/api/invoices/<%= inv.id %>/pdf" data-testid="pdf-link-<%= inv.id %>" target="_blank" rel="noopener">PDF</a>
           </td>
         </tr>
       <% end %>

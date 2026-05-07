@@ -54,6 +54,6 @@ get '/api/invoices/:id/pdf' do
   invoice = Invoice[params[:id].to_i]
   halt 404, 'Invoice not found' unless invoice
   content_type 'application/pdf'
-  headers['Content-Disposition'] = "attachment; filename=\"invoice_#{invoice.id}.pdf\""
+  headers['Content-Disposition'] = "inline; filename=\"invoice_#{invoice.id}.pdf\""
   PdfGenerator.generate(invoice)
 end

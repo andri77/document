@@ -46,6 +46,10 @@ Then('the invoice list should show {string} for {string}') do |currency, client|
   expect(@page.currency_for_client(client)).to eq(currency)
 end
 
+When('I click the PDF link for the last invoice') do
+  @page.click_pdf_link(@page.last_invoice_id)
+end
+
 Then('the generated invoice PDF should match the visual baseline {string}') do |name|
   invoice_id = @page.last_invoice_id
   response = InvoiceApiClient.new(BASE_URL).get_pdf(invoice_id)

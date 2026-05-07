@@ -16,6 +16,7 @@ Feature: Invoice Dashboard UI
     And I click "Generate Invoice"
     Then I should see "Acme Corp" in the invoice list
     And the invoice status should be "Generated"
+    When I click the PDF link for the last invoice
     And the generated invoice PDF should match the visual baseline "invoice_ui_standard"
 
   @ui

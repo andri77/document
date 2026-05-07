@@ -106,6 +106,38 @@ Then('the XML total should equal {string}') do |expected_total|
   expect(total).to eq(expected_total)
 end
 
+Then('the XML root element {string} should have attribute {string} equal to {string}') do |element, attr, value|
+  doc = Nokogiri::XML(@last_response.body)
+  expect(doc.root.name).to eq(element)
+  expect(doc.root[attr]).to eq(value)
+end
+
+Then('the XML should have {string} line items') do |count|
+  doc = Nokogiri::XML(@last_response.body)
+  expect(doc.xpath('//LineItems/Item').count).to eq(count.to_i)
+end
+
+Then('the XML line items should each have unit price {string}') do |price|
+  doc = Nokogiri::XML(@last_response.body)
+  doc.xpath('//LineItems/Item/UnitPrice').each do |node|
+    expect(node.text).to eq(price)
+  end
+end
+
+Then('each XML line item should have a sequential {string} attribute') do |attr|
+  doc = Nokogiri::XML(@last_response.body)
+  doc.xpath('//LineItems/Item').each_with_index do |item, i|
+    expect(item[attr]).to eq((i + 1).to_s)
+  end
+end
+
+Then('the XML {string} element should not be empty') do |tag|
+  doc = Nokogiri::XML(@last_response.body)
+  node = doc.at_xpath("//#{tag}")
+  expect(node).not_to be_nil, "Expected <#{tag}> element to exist in XML"
+  expect(node.text.strip).not_to be_empty
+end
+
 Then('the PDF should match the visual baseline {string}') do |name|
   result = PdfComparison.compare(@last_response.body, name)
   expect(result[:diff_percent]).to be <= result[:threshold],
