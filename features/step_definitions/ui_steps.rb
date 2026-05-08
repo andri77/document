@@ -52,8 +52,7 @@ end
 
 Then('the generated invoice PDF should match the visual baseline {string}') do |name|
   invoice_id = @page.last_invoice_id
-  response = InvoiceApiClient.new(BASE_URL).get_pdf(invoice_id)
-  result = PdfComparison.compare(response.body, name)
+  result = PdfComparison.compare(api.get_pdf(invoice_id).body, name)
   expect(result[:diff_percent]).to be <= result[:threshold],
     "PDF diff #{result[:diff_percent].round(4)}% exceeds threshold #{result[:threshold]}%.\n" \
     "Actual: #{result[:actual_path]}\nDiff:   #{result[:diff_path]}"

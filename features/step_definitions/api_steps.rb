@@ -1,5 +1,3 @@
-require 'json'
-require 'nokogiri'
 require_relative '../../app/models/invoice'
 require_relative '../../pages/invoice_api_client'
 
@@ -10,10 +8,6 @@ VALID_INVOICE_DATA = {
   item_count: 1,
   unit_price: 1500.0
 }.freeze
-
-def api
-  @api ||= InvoiceApiClient.new(BASE_URL)
-end
 
 def reset_invoices
   Invoice.dataset.delete
@@ -53,9 +47,8 @@ Then('the response status should be {int}') do |expected_status|
 end
 
 Then('the response body should contain a valid invoice ID') do
-  body = JSON.parse(@last_response.body)
-  expect(body['id']).to be_a(Integer)
-  expect(body['id']).to be > 0
+  expect(json_body['id']).to be_a(Integer)
+  expect(json_body['id']).to be > 0
 end
 
 Then('the response content-type should be {string}') do |expected_ct|
@@ -63,9 +56,8 @@ Then('the response content-type should be {string}') do |expected_ct|
 end
 
 Then('the XML should contain element {string}') do |xpath|
-  doc = Nokogiri::XML(@last_response.body)
   parts = xpath.split('/')
-  node = doc.root
+  node = xml_doc.root
   parts[1..].each do |part|
     node = node.at_xpath(part)
     raise "XML element '#{part}' not found in path '#{xpath}'" unless node
@@ -73,9 +65,8 @@ Then('the XML should contain element {string}') do |xpath|
 end
 
 Then('the XML element {string} should equal {string}') do |xpath, expected_value|
-  doc = Nokogiri::XML(@last_response.body)
   parts = xpath.split('/')
-  node = doc.root
+  node = xml_doc.root
   parts[1..].each { |part| node = node.at_xpath(part) }
   expect(node.text).to eq(expected_value)
 end
@@ -101,39 +92,32 @@ When('I create an invoice with {string} line items at {string} each') do |items,
 end
 
 Then('the XML total should equal {string}') do |expected_total|
-  doc = Nokogiri::XML(@last_response.body)
-  total = doc.at_xpath('//Total').text
-  expect(total).to eq(expected_total)
+  expect(xml_doc.at_xpath('//Total').text).to eq(expected_total)
 end
 
 Then('the XML root element {string} should have attribute {string} equal to {string}') do |element, attr, value|
-  doc = Nokogiri::XML(@last_response.body)
-  expect(doc.root.name).to eq(element)
-  expect(doc.root[attr]).to eq(value)
+  expect(xml_doc.root.name).to eq(element)
+  expect(xml_doc.root[attr]).to eq(value)
 end
 
 Then('the XML should have {string} line items') do |count|
-  doc = Nokogiri::XML(@last_response.body)
-  expect(doc.xpath('//LineItems/Item').count).to eq(count.to_i)
+  expect(xml_doc.xpath('//LineItems/Item').count).to eq(count.to_i)
 end
 
 Then('the XML line items should each have unit price {string}') do |price|
-  doc = Nokogiri::XML(@last_response.body)
-  doc.xpath('//LineItems/Item/UnitPrice').each do |node|
+  xml_doc.xpath('//LineItems/Item/UnitPrice').each do |node|
     expect(node.text).to eq(price)
   end
 end
 
 Then('each XML line item should have a sequential {string} attribute') do |attr|
-  doc = Nokogiri::XML(@last_response.body)
-  doc.xpath('//LineItems/Item').each_with_index do |item, i|
+  xml_doc.xpath('//LineItems/Item').each_with_index do |item, i|
     expect(item[attr]).to eq((i + 1).to_s)
   end
 end
 
 Then('the XML {string} element should not be empty') do |tag|
-  doc = Nokogiri::XML(@last_response.body)
-  node = doc.at_xpath("//#{tag}")
+  node = xml_doc.at_xpath("//#{tag}")
   expect(node).not_to be_nil, "Expected <#{tag}> element to exist in XML"
   expect(node.text.strip).not_to be_empty
 end
